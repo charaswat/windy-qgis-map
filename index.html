@@ -3,13 +3,15 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Windy Weather Overlay</title>
+     <title>Windy QGIS Map</title>
     
     <!-- Leaflet & Windy SDK Libraries -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
     <script src="https://api.windy.com/assets/map-forecast/lib/tomtom.min.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/lib/windySdk.js"></script>
+	<script src="https://api.windy.com/assets/map-forecast/lib/windySdk.js"></script>
+	<script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
+
 
     <style>
         * {
@@ -109,7 +111,6 @@
         </div>
     </div>
 	
-	<script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
 	<script>
         // ==========================================
         // *** ใส่ WINDY API KEY ของคุณตรงบรรทัดนี้ ***
@@ -119,17 +120,18 @@
 		// Map Forcast API
 		const WINDY_API_KEY = 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd';
 		
-		var options = {
-			key: WINDY_API_KEY,
-			lat: 18.788,
-			lon: 98.985,
-			zoom: 5
+        const options = {
+            key: 'ใส่_API_Key_ของคุณตรงนี้',
+            lat: 13.75,
+            lon: 100.50,
+            zoom: 6,
+            overlay: 'wind'
 		};
 
 		// เรียกใช้งานเมื่อ API โหลดพร้อมแล้ว
-		windyInit(options, function(windyAPI) {
-			// ดึงค่า map ออกมาใช้งาน
-			var map = windyAPI.map;
+        windyInit(options, windyAPI => {
+            const { map } = windyAPI;
+            console.log("Windy Loaded Successfully!");
 			L.popup()
 				.setLatLng([18.788, 98.985])
 				.setContent('Windy API Ready!')
