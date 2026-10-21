@@ -108,8 +108,9 @@
             <input type="range" min="0" max="100" value="80" class="slider" id="opacitySlider">
         </div>
     </div>
-
-    <script>
+	
+	<script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
+	<script>
         // ==========================================
         // *** ใส่ WINDY API KEY ของคุณตรงบรรทัดนี้ ***
         // ==========================================
@@ -118,16 +119,21 @@
 		// Map Forcast API
 		const WINDY_API_KEY = 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd';
 		
-        const options = {
-            key: WINDY_API_KEY,
-            lat: 13.75,
-            lon: 100.50,
-            zoom: 6,
-            overlay: 'wind'
-        };
+		var options = {
+			key: WINDY_API_KEY,
+			lat: 18.788,
+			lon: 98.985,
+			zoom: 5
+		};
 
-        windyInit(options, windyAPI => {
-            const { map, store } = windyAPI;
+		// เรียกใช้งานเมื่อ API โหลดพร้อมแล้ว
+		windyInit(options, function(windyAPI) {
+			// ดึงค่า map ออกมาใช้งาน
+			var map = windyAPI.map;
+			L.popup()
+				.setLatLng([18.788, 98.985])
+				.setContent('Windy API Ready!')
+				.openOn(map);
 
             // ตั้งค่าปรับความโปร่งใส (Opacity)
             const slider = document.getElementById('opacitySlider');
