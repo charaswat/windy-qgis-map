@@ -1,16 +1,13 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Windy QGIS Map</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>Windy QGIS Map - Official Structure</title>
     
-    <!-- Leaflet & Windy SDK Libraries -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+    <!-- โหลด Leaflet และ Windy LibBoot ตามตัวอย่าง Official -->
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/lib/tomtom.min.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/lib/windySdk.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
+    <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
 
     <style>
         * {
@@ -19,24 +16,25 @@
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        html, body, #windy {
+
+        /* กำหนดพื้นหลังให้โปร่งใสเพื่อมองทะลุลงไปเห็นแผนที่ QGIS ด้านล่าง */
+        html, body {
             width: 100%;
             height: 100%;
             overflow: hidden;
             background: transparent !important;
         }
-		/ * ทำให้แผนที่และเลเยอร์ภายในโปร่งใสและปรับความสว่างได้ตามตัวแปร ควบคุมด้วย CSS Filter */
-        .leaflet-container {
-            background: transparent !important;
-        }
 
         #windy {
+            width: 100%;
+            height: 100%;
+            background: transparent !important;
             opacity: var(--windy-opacity, 0.8);
             filter: brightness(var(--windy-brightness, 1));
             transition: opacity 0.1s ease, filter 0.1s ease;
         }
-        /* Modern Floating Control Glassmorphism */
+
+        /* แผงควบคุม Glassmorphism */
         .glass-panel {
             position: absolute;
             top: 15px;
@@ -52,7 +50,7 @@
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             width: 220px;
         }
 
@@ -76,7 +74,7 @@
         .control-group label {
             font-size: 11px;
             color: #94a3b8;
-			display: flex;
+            display: flex;
             justify-content: space-between;
         }
 
@@ -107,16 +105,16 @@
 </head>
 <body>
 
+    <!-- div id="windy" ตามข้อกำหนด Official -->
     <div id="windy"></div>
 
-    <!-- แผงควบคุมความโปร่งใสและความสว่าง -->
+    <!-- แผงควบคุมสไลเดอร์ปรับ ความใส / ความสว่าง -->
     <div class="glass-panel">
         <div class="panel-header">
             <span>Windy Live Stream</span>
             <span style="font-size: 9px; background: #0284c7; padding: 2px 6px; border-radius: 8px;">QGIS</span>
         </div>
         
-        <!-- สไลเดอร์ปรับความโปร่งใส (Opacity) -->
         <div class="control-group">
             <label for="opacitySlider">
                 <span>ความทึบ (Opacity):</span> 
@@ -125,7 +123,6 @@
             <input type="range" min="0" max="100" value="80" class="slider" id="opacitySlider">
         </div>
 
-        <!-- สไลเดอร์ปรับความสว่าง (Brightness) -->
         <div class="control-group">
             <label for="brightnessSlider">
                 <span>ความสว่าง (Brightness):</span> 
@@ -134,55 +131,52 @@
             <input type="range" min="20" max="200" value="100" class="slider" id="brightnessSlider">
         </div>
     </div>
-    <script>
-        // ประกาศตัวแปร map ไว้เป็น Global เพื่อให้ QGIS เรียกใช้งานผ่าน runJavaScript ได้
-        let map;
 
-        const WINDY_API_KEY = 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd';
-        
+    <!-- สคริปต์การทำงาน JS ตามตัวอย่างในรูปภาพ -->
+    <script>
+        // 1. ตั้งค่า options ตามโครงสร้างในรูปตัวอย่าง
         const options = {
-            key: WINDY_API_KEY,
-            lat: 13.75,
-            lon: 100.50,
-            zoom: 6,
-            overlay: 'wind'
+            // ใส่ API Key ของพี่โสตรงนี้
+            key: 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd', 
+            
+            verbose: true,
+            
+            // พิกัดเริ่มต้นตามตัวอย่าง (หรือปรับเป็นไทย: lat: 13.75, lon: 100.50)
+            lat: 50.4,
+            lon: 14.3,
+            zoom: 5,
         };
 
-        // เรียกใช้งานเมื่อ API โหลดพร้อมแล้ว
+        // 2. เรียกใช้งาน Initialize Windy API
         windyInit(options, windyAPI => {
-            // ดึงค่า map ออกมาจาก windyAPI แล้วเก็บใส่ตัวแปร global map
-            map = windyAPI.map;
-            console.log("Windy Loaded Successfully!");
+            // ดึง map instance จาก windyAPI
+            const { map } = windyAPI;
 
+            // แสดง Popup 'Hello World' พิกัดตามตัวอย่าง
             L.popup()
-                .setLatLng([18.788, 98.985])
-                .setContent('Windy API Ready!')
+                .setLatLng([50.4, 14.3])
+                .setContent('Hello World')
                 .openOn(map);
 
-
-            // ตัวแปรควบคุมองค์ประกอบ HTML
+            // 3. ระบบควบคุมสไลเดอร์ความใสและความสว่าง
             const windyContainer = document.getElementById('windy');
-            
             const opacitySlider = document.getElementById('opacitySlider');
             const opacityVal = document.getElementById('opacityVal');
-            
             const brightnessSlider = document.getElementById('brightnessSlider');
             const brightnessVal = document.getElementById('brightnessVal');
 
-            // ฟังก์ชันอัปเดตค่าความโปร่งใส
             opacitySlider.addEventListener('input', (e) => {
                 const val = e.target.value;
                 opacityVal.innerText = `${val}%`;
                 windyContainer.style.setProperty('--windy-opacity', val / 100);
             });
 
-            // ฟังก์ชันอัปเดตค่าความสว่าง
             brightnessSlider.addEventListener('input', (e) => {
                 const val = e.target.value;
                 brightnessVal.innerText = `${val}%`;
                 windyContainer.style.setProperty('--windy-brightness', val / 100);
             });
-		});
+        });
     </script>
 </body>
 </html>
