@@ -4,10 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
     <title>Windy QGIS Map</title>
-    <script src="https://api.windy.com/assets/map-forecast/libBoot.js/beta=36"></script>    
     <!-- โหลดเฉพาะ Leaflet JS และ Windy LibBoot ตามกฎ (ห้ามใส่ Leaflet CSS เด็ดขาด) -->
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
-
+    <script src="https://api.windy.com/assets/map-forecast/libBoot.js/beta=36"></script>  
 
     <style>
         * {
@@ -131,41 +130,6 @@
             <input type="range" min="20" max="200" value="100" class="slider" id="brightnessSlider">
         </div>
     </div>
-
-    <!-- จาวาสคริปต์เชื่อมต่อ Windy API -->
-    <script>
-        const options = {
-            key: 'uyplD1Kxfx3Qhb93obfu70C7CAmyyePB', // ใช้ API Key ใหม่ที่เพิ่ม localhost แล้ว[span_1](start_span)[span_1](end_span)
-            verbose: true,
-            lat: 13.75,
-            lon: 100.50,
-            zoom: 6,
-            overlay: 'wind'
-        };
-
-        windyInit(options, function(windyAPI) {
-            const { map } = windyAPI;
-            console.log("Windy Loaded Successfully!");
-
-            // ควบคุมสไลเดอร์ความโปร่งใสและความสว่าง
-            const windyContainer = document.getElementById('windy');
-            const opacitySlider = document.getElementById('opacitySlider');
-            const opacityVal = document.getElementById('opacityVal');
-            const brightnessSlider = document.getElementById('brightnessSlider');
-            const brightnessVal = document.getElementById('brightnessVal');
-
-            opacitySlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                opacityVal.innerText = `${val}%`;
-                windyContainer.style.setProperty('--windy-opacity', val / 100);
-            });
-
-            brightnessSlider.addEventListener('input', (e) => {
-                const val = e.target.value;
-                brightnessVal.innerText = `${val}%`;
-                windyContainer.style.setProperty('--windy-brightness', val / 100);
-            });
-        });
-    </script>
+    <script src="script.js"></script>	
 </body>
 </html>
