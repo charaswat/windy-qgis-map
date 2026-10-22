@@ -1,5 +1,5 @@
 const options = {
-	key: 'uyplD1Kxfx3Qhb93obfu70C7CAmyyePB', // ใช้ API Key ใหม่ที่เพิ่ม localhost แล้ว[span_1](start_span)[span_1](end_span)
+	key: 'uyplD1Kxfx3Qhb93obfu70C7CAmyyePB'
 	verbose: true,
 	lat: 13.75,
 	lon: 100.50,
@@ -15,8 +15,8 @@ windyInit(options, function(windyAPI) {
 	const windyContainer = document.getElementById('windy');
 	const opacitySlider = document.getElementById('opacitySlider');
 	const opacityVal = document.getElementById('opacityVal');
-	const brightnessSlider = document.getElementById('brightnessSlider');
-	const brightnessVal = document.getElementById('brightnessVal');
+	const brightSlider = document.getElementById('brightSlider');
+	const brightVal = document.getElementById('brightVal');
 
 	opacitySlider.addEventListener('input', (e) => {
 		const val = e.target.value;
@@ -26,7 +26,7 @@ windyInit(options, function(windyAPI) {
 
 	brightnessSlider.addEventListener('input', (e) => {
 		const val = e.target.value;
-		brightnessVal.innerText = `${val}%`;
+		brightVal.innerText = `${val}%`;
 		windyContainer.style.setProperty('--windy-brightness', val / 100);
 	});
 });

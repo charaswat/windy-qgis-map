@@ -1,14 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
-    <title>Windy QGIS Map</title>
-    <!-- โหลดเฉพาะ Leaflet JS และ Windy LibBoot ตามกฎ (ห้ามใส่ Leaflet CSS เด็ดขาด) -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Level Weather Radar Dashboard (28 Maps)</title>
+
+    <!-- Windy API Library -->
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/libBoot.js?beta=36"></script>  
+    <script src="https://api.windy.com/assets/map-forecast/lib/iframe.js"></script>
 
     <style>
+        :root {
+            --windy-opacity: 1;
+            --windy-brightness: 1;
+            --bg-color: #0d1117;
+            --card-bg: rgba(22, 27, 34, 0.85);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-color: #0284c7;
+            --text-main: #f0f6fc;
+            --text-sub: #8b949e;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -16,120 +28,198 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* ตั้งค่าพื้นหลังเว็บให้โปร่งใส เพื่อมองทะลุเห็นแผนที่ QGIS ด้านล่าง */
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: transparent !important;
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
         }
 
-        #windy {
-            width: 100%;
-            height: 100%;
-            background: transparent !important;
-            opacity: var(--windy-opacity, 0.8);
-            filter: brightness(var(--windy-brightness, 1));
-            transition: opacity 0.1s ease, filter 0.1s ease;
-        }
-
-        /* แผงควบคุมความโปร่งใสและความสว่าง ดีไซน์กระจก */
-        .glass-panel {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+        /* 🎛️ Header & Master Controls */
+        header {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 12px 16px;
-            color: #ffffff;
+            padding: 20px;
+            margin-bottom: 25px;
+            position: sticky;
+            top: 10px;
+            z-index: 999;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 220px;
         }
 
-        .panel-header {
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #38bdf8;
+        .header-title {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
         }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        .header-title h1 {
+            font-size: 1.5rem;
+            color: #38bdf8;
         }
 
-        .control-group label {
-            font-size: 11px;
-            color: #94a3b8;
+        .controls-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .control-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-label {
             display: flex;
             justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
         }
 
         .slider {
-            -webkit-appearance: none;
             width: 100%;
-            height: 4px;
-            border-radius: 2px;
-            background: #334155;
+            height: 6px;
+            border-radius: 3px;
+            background: #30363d;
             outline: none;
-        }
-
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #38bdf8;
             cursor: pointer;
-            transition: transform 0.1s ease-in-out;
+            accent-color: var(--accent-color);
         }
 
-        .slider::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
+        /* 🔘 Navigation Tabs */
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        /* 🗺️ Grid & Map Cards Layout */
+        .level-section {
+            margin-bottom: 35px;
+        }
+
+        .level-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid var(--accent-color);
+            color: #e2e8f0;
+        }
+
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .map-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-card-header {
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .tag {
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .tag.surface-fallback {
+            background: #854d0e;
+            color: #fef08a;
+        }
+
+        /* Container สั่งการความโปร่งใส/ความสว่างให้ Windy Map */
+        .windy-container {
+            width: 100%;
+            height: 280px;
+            position: relative;
+            opacity: var(--windy-opacity);
+            filter: brightness(var(--windy-brightness));
+            transition: opacity 0.1s ease, filter 0.1s ease;
         }
     </style>
 </head>
 <body>
 
-    <!-- องค์ประกอบ div สำหรับแสดงแผนที่ Windy -->
-    <div id="windy"></div>
+    <!-- 🎛️ Master Control Panel -->
+    <header>
+        <div class="header-title">
+            <h1>🌐 Multi-Level Weather Dashboard (28 Maps)</h1>
+            <span style="font-size: 0.85rem; color: var(--text-sub);">Windy API Dashboard</span>
+        </div>
+        <div class="controls-wrapper">
+            <div class="control-card">
+                <div class="control-label">
+                    <span>ความโปร่งใสแผนที่ (Opacity)</span>
+                    <span id="masterOpacityVal" style="color: #38bdf8;">100%</span>
+                </div>
+                <input type="range" min="0" max="100" value="100" class="slider" id="masterOpacitySlider">
+            </div>
+            <div class="control-card">
+                <div class="control-label">
+                    <span>ความสว่างแผนที่ (Brightness)</span>
+                    <span id="masterBrightVal" style="color: #38bdf8;">100%</span>
+                </div>
+                <input type="range" min="0" max="100" value="100" class="slider" id="masterBrightSlider">
+            </div>
+        </div>
+    </header>
 
-    <!-- แผงควบคุมสไลเดอร์ -->
-    <div class="glass-panel">
-        <div class="panel-header">
-            <span>Windy Live Stream</span>
-            <span style="font-size: 9px; background: #0284c7; padding: 2px 6px; border-radius: 8px;">QGIS</span>
-        </div>
-        
-        <div class="control-group">
-            <label for="opacitySlider">
-                <span>ความทึบ (Opacity):</span> 
-                <span id="opacityVal">80%</span>
-            </label>
-            <input type="range" min="0" max="100" value="80" class="slider" id="opacitySlider">
-        </div>
-
-        <div class="control-group">
-            <label for="brightnessSlider">
-                <span>ความสว่าง (Brightness):</span> 
-                <span id="brightnessVal">100%</span>
-            </label>
-            <input type="range" min="20" max="200" value="100" class="slider" id="brightnessSlider">
-        </div>
+    <!-- 🔘 Pressure Level Filter Tabs -->
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="filterLevel('all')">ทั้งหมด (28 แผนที่)</button>
+        <button class="tab-btn" onclick="filterLevel('850h')">850 hPa (~1.5 km)</button>
+        <button class="tab-btn" onclick="filterLevel('925h')">925 hPa (~750 m)</button>
+        <button class="tab-btn" onclick="filterLevel('500h')">500 hPa (~5.5 km)</button>
+        <button class="tab-btn" onclick="filterLevel('200h')">200 hPa (~12 km)</button>
     </div>
-    <script src="script.js"></script>	
+
+    <!-- 🗺️ Dashboard Container -->
+    <main id="dashboardContainer"></main>
+
+    <!-- เชื่อมต่อกับไฟล์ JavaScript -->
+    <script src="script.js"></script>
 </body>
 </html>
