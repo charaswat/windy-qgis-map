@@ -143,7 +143,7 @@
             overlay: 'wind'
         };
 
-        windyInit(options, windyAPI => {
+        windyInit(options, function(windyAPI) {
             const { map } = windyAPI;
             console.log("Windy Loaded Successfully!");
 
