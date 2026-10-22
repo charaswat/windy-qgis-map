@@ -3,15 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-     <title>Windy QGIS Map</title>
+    <title>Windy QGIS Map</title>
     
     <!-- Leaflet & Windy SDK Libraries -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
     <script src="https://api.windy.com/assets/map-forecast/lib/tomtom.min.js"></script>
-	<script src="https://api.windy.com/assets/map-forecast/lib/windySdk.js"></script>
-	<script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
-
+    <script src="https://api.windy.com/assets/map-forecast/lib/windySdk.js"></script>
+    <script src="https://api.windy.com/assets/map-forecast/lib/windyInit.js"></script>
 
     <style>
         * {
@@ -106,36 +105,35 @@
             <span style="font-size: 9px; background: #0284c7; padding: 2px 6px; border-radius: 8px;">QGIS</span>
         </div>
         <div class="control-group">
-            <label for="opacitySlider">ความทึบ Opacity): <span id="opacityVal">80%</span></label>
-            <input type="range" min="0" max="100" value="80" class="slider" id="opacitySlider">
+            <label for="opacitySlider">ความทึบ (Opacity): <span id="opacityVal">80%</span></label>
+            <input type="range" min="0" max="100" value="50" class="slider" id="opacitySlider">
         </div>
     </div>
-	
-	<script>
-        // ==========================================
-        // *** ใส่ WINDY API KEY ของคุณตรงบรรทัดนี้ ***
-        // ==========================================
-		// Plugin API
-        // const WINDY_API_KEY = '1D5w1ReK9aYHd9xOcklkQPwQiKvWsTcZ';		
-		// Map Forcast API
-		const WINDY_API_KEY = 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd';
-		
+    
+    <script>
+        // ประกาศตัวแปร map ไว้เป็น Global เพื่อให้ QGIS เรียกใช้งานผ่าน runJavaScript ได้
+        let map;
+
+        const WINDY_API_KEY = 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd';
+        
         const options = {
-            key: 'DrtpLWqg4AIIp4Mfo9IYsAI84TQLGtsd',
+            key: WINDY_API_KEY,
             lat: 13.75,
             lon: 100.50,
             zoom: 6,
             overlay: 'wind'
-		};
+        };
 
-		// เรียกใช้งานเมื่อ API โหลดพร้อมแล้ว
+        // เรียกใช้งานเมื่อ API โหลดพร้อมแล้ว
         windyInit(options, windyAPI => {
-            const { map } = windyAPI;
+            // ดึงค่า map ออกมาจาก windyAPI แล้วเก็บใส่ตัวแปร global map
+            map = windyAPI.map;
             console.log("Windy Loaded Successfully!");
-			L.popup()
-				.setLatLng([18.788, 98.985])
-				.setContent('Windy API Ready!')
-				.openOn(map);
+
+            L.popup()
+                .setLatLng([18.788, 98.985])
+                .setContent('Windy API Ready!')
+                .openOn(map);
 
             // ตั้งค่าปรับความโปร่งใส (Opacity)
             const slider = document.getElementById('opacitySlider');
