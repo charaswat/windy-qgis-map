@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
-    <title>Windy QGIS Map - Official Structure</title>
+    <title>Windy QGIS Map</title>
     
-    <!-- โหลด Leaflet และ Windy LibBoot ตามตัวอย่าง Official -->
+    <!-- โหลดเฉพาะ Leaflet JS และ Windy LibBoot ตามกฎ (ห้ามใส่ Leaflet CSS เด็ดขาด) -->
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
     <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
 
@@ -17,7 +17,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* กำหนดพื้นหลังให้โปร่งใสเพื่อมองทะลุลงไปเห็นแผนที่ QGIS ด้านล่าง */
+        /* ตั้งค่าพื้นหลังเว็บให้โปร่งใส เพื่อมองทะลุเห็นแผนที่ QGIS ด้านล่าง */
         html, body {
             width: 100%;
             height: 100%;
@@ -34,7 +34,7 @@
             transition: opacity 0.1s ease, filter 0.1s ease;
         }
 
-        /* แผงควบคุม Glassmorphism */
+        /* แผงควบคุมความโปร่งใสและความสว่าง ดีไซน์กระจก */
         .glass-panel {
             position: absolute;
             top: 15px;
@@ -105,10 +105,10 @@
 </head>
 <body>
 
-    <!-- div id="windy" ตามข้อกำหนด Official -->
+    <!-- องค์ประกอบ div สำหรับแสดงแผนที่ Windy -->
     <div id="windy"></div>
 
-    <!-- แผงควบคุมสไลเดอร์ปรับ ความใส / ความสว่าง -->
+    <!-- แผงควบคุมสไลเดอร์ -->
     <div class="glass-panel">
         <div class="panel-header">
             <span>Windy Live Stream</span>
@@ -132,33 +132,22 @@
         </div>
     </div>
 
-    <!-- สคริปต์การทำงาน JS ตามตัวอย่างในรูปภาพ -->
+    <!-- จาวาสคริปต์เชื่อมต่อ Windy API -->
     <script>
-        // 1. ตั้งค่า options ตามโครงสร้างในรูปตัวอย่าง
         const options = {
-            // ใส่ API Key ของพี่โสตรงนี้
-            key: 'uyplD1Kxfx3Qhb93obfu7OC7CAmyyePB', 
-            
+            key: 'uyplD1Kxfx3Qhb93obfu70C7CAmyyePB', // ใช้ API Key ใหม่ที่เพิ่ม localhost แล้ว[span_1](start_span)[span_1](end_span)
             verbose: true,
-            
-            // พิกัดเริ่มต้นตามตัวอย่าง (หรือปรับเป็นไทย: lat: 13.75, lon: 100.50)
-            lat: 50.4,
-            lon: 14.3,
-            zoom: 5,
+            lat: 13.75,
+            lon: 100.50,
+            zoom: 6,
+            overlay: 'wind'
         };
 
-        // 2. เรียกใช้งาน Initialize Windy API
         windyInit(options, windyAPI => {
-            // ดึง map instance จาก windyAPI
             const { map } = windyAPI;
+            console.log("Windy Loaded Successfully!");
 
-            // แสดง Popup 'Hello World' พิกัดตามตัวอย่าง
-            L.popup()
-                .setLatLng([50.4, 14.3])
-                .setContent('Hello World')
-                .openOn(map);
-
-            // 3. ระบบควบคุมสไลเดอร์ความใสและความสว่าง
+            // ควบคุมสไลเดอร์ความโปร่งใสและความสว่าง
             const windyContainer = document.getElementById('windy');
             const opacitySlider = document.getElementById('opacitySlider');
             const opacityVal = document.getElementById('opacityVal');
