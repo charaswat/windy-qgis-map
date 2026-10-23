@@ -37,7 +37,6 @@ function initDashboard() {
     dashboard.innerHTML = '';
 
     levels.forEach((levelObj) => {
-        // สร้าง Section ประจำระดับความกดอากาศ
         const section = document.createElement('section');
         section.className = 'level-section';
         section.dataset.level = levelObj.id;
@@ -77,7 +76,6 @@ function initDashboard() {
             setTimeout(() => {
                 const el = document.getElementById(mapId);
                 if (el) mapContainers.push(el);
-
                 // สั่งการ Windy API
                 const options = {
                     key: API_KEY,
@@ -89,13 +87,10 @@ function initDashboard() {
                     level: targetLevel,
                     container: document.getElementById(mapId)
                 };
-
                 windyInit(options, (windyAPI) => {
-                    // โหลดสำเร็จ
                 });
-            }, (mapContainers.length + 1) * 150); // ดีเลย์โหลดเพื่อลดภาระเครื่อง
+            }, (mapContainers.length + 1) * 150);
         });
-
         section.appendChild(grid);
         dashboard.appendChild(section);
     });
