@@ -22,6 +22,16 @@
             --text-main: #f0f6fc;
             --text-sub: #8b949e;
         }
+		/* เพิ่มส่วนนี้เข้าไปสำหรับกำหนดสไตล์ของ id="windy" */
+		#windy {
+			width: 100%;
+			height: 600px; /* หรือตั้งค่าความสูงตามความต้องการ เช่น 100vh, 500px */
+			border-radius: 12px;
+			overflow: hidden;
+			filter: opacity(var(--windy-opacity)) brightness(var(--windy-brightness));
+			background-color: var(--card-bg);
+			border: 1px solid var(--border-color);
+		}
 
         * {
             box-sizing: border-box;
@@ -219,9 +229,16 @@
     </div>
 
     <!-- 🗺️ Dashboard Container -->
-    <main id="dashboardContainer"></main>
+    <main id="dashboardContainer">
+        <div id="windy"></div>	
+	</main>
 
     <!-- เชื่อมต่อกับไฟล์ JavaScript -->
-    <script src="script.js"></script>
+	<!-- 1. โหลดไลบรารีหลักของ Windy ก่อน -->
+	<script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
+
+	<!-- 2. ค่อยโหลดไฟล์ script.js ของเราทีหลัง -->
+	<script src="script.js"></script>
+	
 </body>
 </html>
