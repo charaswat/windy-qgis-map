@@ -1,144 +1,215 @@
-// ==========================================
-// 1. กำหนดค่าคอนฟิกพื้นฐาน
-// ==========================================
-const API_KEY = 'uypID1Kxfx3Qhb93obfu70C7CAmyyePB'; // รหัส Windy API Key
+// ===================================================
+// 1. ค่าคอนฟิกพื้นฐาน
+// ===================================================
+const API_KEY = 'uypID1Kxfx3Qhb93obfu70C7cAmyyePB'; // รหัส API Key ของคุณ
 const DEFAULT_LAT = 13.75;
 const DEFAULT_LON = 100.50;
 const DEFAULT_ZOOM = 6;
 
-// ระดับความกดอากาศหลัก (4 Levels)
+// ระดับความสูง
 const levels = [
-    { id: '850h', name: '850 hPa (ความสูงชั้นต่ำ ~1.5 กม.)' },
-    { id: '925h', name: '925 hPa (ความสูงใกล้พื้นผิว ~750 ม.)' },
-    { id: '500h', name: '500 hPa (ความสูงชั้นกลาง ~5.5 กม.)' },
-    { id: '200h', name: '200 hPa (ความสูงชั้นบน/Jet Stream ~12 กม.)' }
+    { id: '850h', name: '850 hPa' },
+    { id: '925h', name: '925 hPa' },
+    { id: '500h', name: '500 hPa' },
+    { id: '200h', name: '200 hPa' }
 ];
 
-// รายการ 7 ซับเลเยอร์สภาพอากาศ
+// รายการ 7 เลเยอร์สภาพอากาศ
 const subLayers = [
-    { overlay: 'wind', name: 'ลม (Wind)', supportsUpper: true },
-    { overlay: 'rh', name: 'ความชื้น (Humidity)', supportsUpper: true },
-    { overlay: 'temp', name: 'อุณหภูมิ (Temperature)', supportsUpper: true },
-    { overlay: 'rain', name: 'ฝน (Rain)', supportsUpper: false },
-    { overlay: 'clouds', name: 'เมฆ (Clouds)', supportsUpper: false },
-    { overlay: 'gust', name: 'ลมกระโชก (Wind Gust)', supportsUpper: false },
-    { overlay: 'pressure', name: 'ความกดอากาศ (Pressure)', supportsUpper: false }
+    { overlay: 'wind', name: 'ลม', supportsUpper: true },
+    { overlay: 'rh', name: 'ความชื้น', supportsUpper: true },
+    { overlay: 'temp', name: 'อุณหภูมิ', supportsUpper: true },
+    { overlay: 'rain', name: 'ฝน', supportsUpper: false },
+    { overlay: 'clouds', name: 'เมฆ', supportsUpper: false },
+    { overlay: 'gust', name: 'ลมกระโชก', supportsUpper: false },
+    { overlay: 'pressure', name: 'ความกดอากาศ', supportsUpper: false }
 ];
 
-// เก็บ Element ของ Container แผนที่ทั้งหมดไว้ควบคุมร่วมกัน
-const mapContainers = [];
+let currentLevel = '850h';
 
-// ==========================================
-// 2. ฟังก์ชันสร้างการ์ด HTML และสั่งรัน Windy API (28 Maps)
-// ==========================================
-function initDashboard() {
-    const dashboard = document.getElementById('dashboardContainer');
-    if (!dashboard) return;
-    dashboard.innerHTML = '';
+// กำหนดสถานะเปิด-ปิดเริ่มต้น (เปิด 'ลม' ไว้ 1 อัน)
+let activeLayers = {
+    'wind': true,
+    'rh': false,
+    'temp': false,
+    'rain': false,
+    'clouds': false,
+    'gust': false,
+    'pressure': false
+};
 
-    levels.forEach((levelObj) => {
-        const section = document.createElement('section');
-        section.className = 'level-section';
-        section.dataset.level = levelObj.id;
+let mapInstances = {};
+let sharedMapState = { lat: DEFAULT_LAT, lon: DEFAULT_LON, zoom: DEFAULT_ZOOM };
 
-        const levelTitle = document.createElement('h2');
-        levelTitle.className = 'level-header';
-        levelTitle.innerText = levelObj.name;
-        section.appendChild(levelTitle);
+// ===================================================
+// 2. สร้างปุ่มควบคุมในบรรทัดบนสุด
+// ===================================================
+function initControlBar() {
+    const levelGroup = document.getElementById('levelBtnGroup');
+    levelGroup.innerHTML = '';
+    levels.forEach(lvl => {
+        const btn = document.createElement('button');
+        btn.className = `level-btn ${lvl.id === currentLevel ? 'active' : ''}`;
+        btn.textContent = lvl.id;
+        btn.onclick = () => changeLevel(lvl.id);
+        levelGroup.appendChild(btn);
+    });
 
-        const grid = document.createElement('div');
-        grid.className = 'maps-grid';
-
-        // วนลูปสร้าง 7 ซับเลเยอร์ในการ์ดแต่ละระดับ
-        subLayers.forEach((sub) => {
-            const mapId = `windyMap_${levelObj.id}_${sub.overlay}`;
-
-            const card = document.createElement('div');
-            card.className = 'map-card';
-
-            // ตรวจสอบว่าเลเยอร์นั้นรองรับความสูงชั้นบนหรือไม่ (ถ้าไม่ จะดึงค่า Surface อัตโนมัติ)
-            const isUpperSupported = sub.supportsUpper;
-            const targetLevel = isUpperSupported ? levelObj.id : 'surface';
-            const badgeText = isUpperSupported ? levelObj.id : 'Surface (ผิวดิน)';
-            const badgeClass = isUpperSupported ? 'tag' : 'tag surface-fallback';
-
-            card.innerHTML = `
-                <div class="map-card-header">
-                    <span>${sub.name}</span>
-                    <span class="${badgeClass}">${badgeText}</span>
-                </div>
-                <div id="${mapId}" class="windy-container"></div>
-            `;
-
-            grid.appendChild(card);
-
-            // เก็บอ้างอิง div เพื่อนำไปวนลูปปรับ CSS Variables สไลเดอร์
-            setTimeout(() => {
-                const el = document.getElementById(mapId);
-                if (el) mapContainers.push(el);
-                // สั่งการ Windy API
-                const options = {
-                    key: API_KEY,
-                    verbose: false,
-                    lat: DEFAULT_LAT,
-                    lon: DEFAULT_LON,
-                    zoom: DEFAULT_ZOOM,
-                    overlay: sub.overlay,
-                    level: targetLevel,
-                    container: document.getElementById(mapId)
-                };
-                windyInit(options, (windyAPI) => {
-                });
-            }, (mapContainers.length + 1) * 150);
-        });
-        section.appendChild(grid);
-        dashboard.appendChild(section);
+    const layerGroup = document.getElementById('layerBtnGroup');
+    layerGroup.innerHTML = '';
+    subLayers.forEach(layer => {
+        const btn = document.createElement('button');
+        btn.className = `layer-btn ${activeLayers[layer.overlay] ? 'active' : ''}`;
+        btn.textContent = layer.name;
+        btn.id = `btn-layer-${layer.overlay}`;
+        btn.onclick = () => toggleLayer(layer.overlay);
+        layerGroup.appendChild(btn);
     });
 }
 
-// ==========================================
-// 3. ระบบ Master Control (ควบคุม Opacity & Brightness รวม)
-// ==========================================
-const masterOpacitySlider = document.getElementById('masterOpacitySlider');
-const masterOpacityVal = document.getElementById('masterOpacityVal');
-const masterBrightSlider = document.getElementById('masterBrightSlider');
-const masterBrightVal = document.getElementById('masterBrightVal');
+// ===================================================
+// 3. จัดการเปิด-ปิด เลเยอร์แบบซ้อนทับกัน
+// ===================================================
+function toggleLayer(overlayId) {
+    activeLayers[overlayId] = !activeLayers[overlayId];
 
-if (masterOpacitySlider) {
-    masterOpacitySlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        if (masterOpacityVal) masterOpacityVal.innerText = `${val}%`;
-        document.documentElement.style.setProperty('--windy-opacity', val / 100);
-    });
-}
-
-if (masterBrightSlider) {
-    masterBrightSlider.addEventListener('input', (e) => {
-        const val = e.target.value;
-        if (masterBrightVal) masterBrightVal.innerText = `${val}%`;
-        document.documentElement.style.setProperty('--windy-brightness', val / 100);
-    });
-}
-
-// ==========================================
-// 4. ระบบสลับ Tab กรองแสดงเฉพาะระดับความสูง
-// ==========================================
-function filterLevel(selectedLevel) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if (event && event.target) {
-        event.target.classList.add('active');
+    const btn = document.getElementById(`btn-layer-${overlayId}`);
+    if (btn) {
+        if (activeLayers[overlayId]) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     }
 
-    document.querySelectorAll('.level-section').forEach(section => {
-        if (selectedLevel === 'all' || section.dataset.level === selectedLevel) {
-            section.style.display = 'block';
-        } else {
-            section.style.display = 'none';
-        }
+    renderStackMaps();
+}
+
+function changeLevel(levelId) {
+    currentLevel = levelId;
+    initControlBar();
+    renderStackMaps();
+}
+
+// ===================================================
+// 4. เรนเดอร์แผนที่ซ้อนทับกันเต็มหน้าจอด้านล่าง
+// ===================================================
+function renderStackMaps() {
+    const container = document.getElementById('map-fullscreen-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    mapInstances = {};
+
+    subLayers.forEach((subLayer, index) => {
+        if (!activeLayers[subLayer.overlay]) return;
+
+        const effectiveLevel = subLayer.supportsUpper ? currentLevel : 'surface';
+
+        const paneDiv = document.createElement('div');
+        paneDiv.className = 'windy-layer-pane';
+        paneDiv.id = `pane-${subLayer.overlay}`;
+        container.appendChild(paneDiv);
+
+        setTimeout(() => {
+            const options = {
+                key: API_KEY,
+                lat: sharedMapState.lat,
+                lon: sharedMapState.lon,
+                zoom: sharedMapState.zoom,
+                overlay: subLayer.overlay,
+                level: effectiveLevel
+            };
+
+            if (typeof windyInit === 'function') {
+                windyInit(options, windyAPI => {
+                    mapInstances[subLayer.overlay] = windyAPI;
+
+                    const mapObj = windyAPI.map;
+                    if (mapObj) {
+                        mapObj.on('moveend', () => {
+                            const center = mapObj.getCenter();
+                            const zoom = mapObj.getZoom();
+                            sharedMapState.lat = center.lat;
+                            sharedMapState.lon = center.lng;
+                            sharedMapState.zoom = zoom;
+
+                            Object.keys(mapInstances).forEach(key => {
+                                if (key !== subLayer.overlay && mapInstances[key] && mapInstances[key].map) {
+                                    const otherMap = mapInstances[key].map;
+                                    if (otherMap.getCenter().lat !== center.lat || otherMap.getZoom() !== zoom) {
+                                        otherMap.setView([center.lat, center.lng], zoom, { animate: false });
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        }, index * 200);
     });
 }
 
-// เริ่มต้นทำงานทันทีเมื่อเปิดหน้าเว็บ
-window.addEventListener('DOMContentLoaded', () => {
-    initDashboard();
+// ===================================================
+// 5. ปรับความทึบและความสว่าง
+// ===================================================
+function updateOpacity(val) {
+    const opacity = val / 100;
+    document.documentElement.style.setProperty('--windy-opacity', opacity);
+    const valSpan = document.getElementById('opacityVal');
+    if (valSpan) valSpan.textContent = `${val}%`;
+}
+
+function updateBrightness(val) {
+    const brightness = val / 100;
+    document.documentElement.style.setProperty('--windy-brightness', brightness);
+    const valSpan = document.getElementById('brightnessVal');
+    if (valSpan) valSpan.textContent = `${val}%`;
+}
+
+// ===================================================
+// 6. ฟังก์ชัน ย่อพัก / คืนค่า / ปิด หน้าต่าง
+// ===================================================
+function minimizeWindow() {
+    // พับเก็บทั้ง Control Bar และ Map แล้วแสดงปุ่มจิ๋วมุมซ้ายล่างแทน
+    document.body.classList.add('minimized');
+}
+
+function restoreWindow() {
+    // ดึงหน้าต่างคืนกลับมาแสดงผลเต็มหน้าจอ
+    document.body.classList.remove('minimized');
+    
+    // บังคับให้ Leaflet คำนวณขนาดจอใหม่ให้ถูกต้อง
+    setTimeout(() => {
+        Object.keys(mapInstances).forEach(key => {
+            if (mapInstances[key] && mapInstances[key].map) {
+                mapInstances[key].map.invalidateSize();
+            }
+        });
+    }, 100);
+}
+
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+function closeWindow() {
+    if (window.close) {
+        window.close();
+    }
+    document.body.style.display = 'none';
+}
+
+// เริ่มต้นทำงานเมื่อโหลดหน้าเว็บ
+document.addEventListener('DOMContentLoaded', () => {
+    initControlBar();
+    renderStackMaps();
 });

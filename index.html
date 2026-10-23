@@ -3,35 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Level Weather Radar Dashboard (28 Maps)</title>
-	<!-- ไอคอนเว็บ (Favicon) แบบสำเร็จรูปรูปสภาพอากาศ -->
-	<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌤️</text></svg>">
-
-    <!-- Windy API Library -->
+    <title>Windy Stacked Layers Dashboard</title>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
-    <script src="https://api.windy.com/assets/map-forecast/lib/iframe.js"></script>
+    
+    <!-- Windy API Library (libBoot.js) -->
+    <script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
 
     <style>
         :root {
-            --windy-opacity: 1;
-            --windy-brightness: 1;
+            --windy-opacity: 1;      /* ค่าความทึบแผนที่พื้นหลัง Windy */
+            --windy-brightness: 1;   /* ค่าความสว่างแผนที่ Windy */
             --bg-color: #0d1117;
-            --card-bg: rgba(22, 27, 34, 0.85);
+            --panel-bg: rgba(22, 27, 34, 0.95);
             --border-color: rgba(255, 255, 255, 0.1);
             --accent-color: #0284c7;
+            --active-color: #2563eb;
+            --layer-active-color: #0d9488;
             --text-main: #f0f6fc;
             --text-sub: #8b949e;
         }
-		/* เพิ่มส่วนนี้เข้าไปสำหรับกำหนดสไตล์ของ id="windy" */
-		#windy {
-			width: 100%;
-			height: 600px; /* หรือตั้งค่าความสูงตามความต้องการ เช่น 100vh, 500px */
-			border-radius: 12px;
-			overflow: hidden;
-			filter: opacity(var(--windy-opacity)) brightness(var(--windy-brightness));
-			background-color: var(--card-bg);
-			border: 1px solid var(--border-color);
-		}
 
         * {
             box-sizing: border-box;
@@ -43,202 +36,229 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 20px;
-        }
-
-        /* 🎛️ Header & Master Controls */
-        header {
-            background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 25px;
-            position: sticky;
-            top: 10px;
-            z-index: 999;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        }
-
-        .header-title {
+            height: 100vh;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 🌟 บรรทัดควบคุมเดียวรวมทุกอย่างด้านบนสุด */
+        .control-bar {
+            background: var(--panel-bg);
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
-
-        .header-title h1 {
-            font-size: 1.5rem;
-            color: #38bdf8;
-        }
-
-        .controls-wrapper {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .control-card {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
-        .control-label {
+            padding: 6px 12px;
             display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #30363d;
-            outline: none;
-            cursor: pointer;
-            accent-color: var(--accent-color);
-        }
-
-        /* 🔘 Navigation Tabs */
-        .tabs-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: nowrap;
             overflow-x: auto;
-            padding-bottom: 5px;
+            z-index: 1000;
+            height: 50px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
 
-        .tab-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 10px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
             white-space: nowrap;
         }
 
-        .tab-btn.active, .tab-btn:hover {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: white;
+        .control-group label {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 600;
         }
 
-        /* 🗺️ Grid & Map Cards Layout */
-        .level-section {
-            margin-bottom: 35px;
+        .divider {
+            width: 1px;
+            height: 22px;
+            background: var(--border-color);
         }
 
-        .level-header {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            padding-left: 10px;
-            border-left: 4px solid var(--accent-color);
-            color: #e2e8f0;
-        }
-
-        .maps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .map-card {
-            background: var(--card-bg);
+        /* ปุ่มเลือกระดับความสูง */
+        .level-btn {
+            padding: 4px 8px;
+            background: var(--bg-color);
+            color: var(--text-main);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
         }
-
-        .map-card-header {
-            padding: 10px 15px;
-            background: rgba(0, 0, 0, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
+        .level-btn.active {
+            background-color: var(--active-color);
+            border-color: var(--active-color);
             font-weight: bold;
         }
 
-        .tag {
-            background: #1e293b;
-            color: #38bdf8;
-            padding: 2px 8px;
+        /* ปุ่มเปิด-ปิด เลเยอร์ทั้ง 7 */
+        .layer-btn {
+            padding: 4px 8px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-size: 0.75rem;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .layer-btn.active {
+            background-color: var(--layer-active-color);
+            border-color: #14b8a6;
+            font-weight: bold;
         }
 
-        .tag.surface-fallback {
-            background: #854d0e;
-            color: #fef08a;
+        /* สไลเดอร์ */
+        .slider {
+            width: 85px;
+            cursor: pointer;
         }
 
-        /* Container สั่งการความโปร่งใส/ความสว่างให้ Windy Map */
-        .windy-container {
-            width: 100%;
-            height: 280px;
+        /* กลุ่มปุ่มควบคุมหน้าต่างมุมขวา (ย่อ, ขยาย, ปิด) */
+        .window-controls {
+            display: flex;
+            gap: 4px;
+            margin-left: auto; /* ดันไปชิดขวาสุด */
+        }
+
+        .win-btn {
+            width: 28px;
+            height: 26px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .win-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .win-btn.close-btn:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* 🌟 ปุ่มแคปซูลจิ๋วสำหรับแอบไว้ที่มุมซ้ายล่างตอนย่อพักหน้าจอ */
+        #mini-dock-btn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 9999;
+            background: var(--panel-bg);
+            color: var(--text-main);
+            border: 1px solid var(--accent-color);
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            display: none; /* ซ่อนไว้ก่อน จะแสดงเมื่อกดพักหน้าจอ */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        #mini-dock-btn:hover {
+            transform: scale(1.05);
+            background: var(--accent-color);
+        }
+		
+        /* 🌟 พื้นที่ด้านล่าง แสดงเลเยอร์ซ้อนกันเต็มหน้าจอ */
+        #map-fullscreen-container {
             position: relative;
+            flex: 1;
+            width: 100%;
+            background: transparent;
+            transition: opacity 0.3s ease;
+        }
+
+        .windy-layer-pane {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+
+        /* ควบคุมความทึบและความสว่างเฉพาะแผนที่พื้นหลัง ให้แผนที่ QGIS ทะลุขึ้นมา */
+        .windy-layer-pane .leaflet-tile-pane {
             opacity: var(--windy-opacity);
             filter: brightness(var(--windy-brightness));
             transition: opacity 0.1s ease, filter 0.1s ease;
+        }
+
+        /* สถานะเมื่อพักหน้าต่าง */
+        body.minimized .control-bar,
+        body.minimized #map-fullscreen-container {
+            display: none !important;
+        }
+        body.minimized #mini-dock-btn {
+            display: flex !important;
         }
     </style>
 </head>
 <body>
 
-    <!-- 🎛️ Master Control Panel -->
-    <header>
-        <div class="header-title">
-            <h1>🌐 Multi-Level Weather Dashboard (28 Maps)</h1>
-            <span style="font-size: 0.85rem; color: var(--text-sub);">Windy API Dashboard</span>
+    <!-- บรรทัดควบคุมเดี่ยวแบบครบจบ -->
+    <div class="control-bar" id="mainControlBar">
+        <!-- ระดับความสูง -->
+        <div class="control-group">
+            <label>ระดับ:</label>
+            <div id="levelBtnGroup" style="display: flex; gap: 3px;"></div>
         </div>
-        <div class="controls-wrapper">
-            <div class="control-card">
-                <div class="control-label">
-                    <span>ความโปร่งใสแผนที่ (Opacity)</span>
-                    <span id="masterOpacityVal" style="color: #38bdf8;">100%</span>
-                </div>
-                <input type="range" min="0" max="100" value="100" class="slider" id="masterOpacitySlider">
-            </div>
-            <div class="control-card">
-                <div class="control-label">
-                    <span>ความสว่างแผนที่ (Brightness)</span>
-                    <span id="masterBrightVal" style="color: #38bdf8;">100%</span>
-                </div>
-                <input type="range" min="0" max="100" value="100" class="slider" id="masterBrightSlider">
-            </div>
-        </div>
-    </header>
 
-    <!-- 🔘 Pressure Level Filter Tabs -->
-    <div class="tabs-container">
-        <button class="tab-btn active" onclick="filterLevel('all')">ทั้งหมด (28 แผนที่)</button>
-        <button class="tab-btn" onclick="filterLevel('850h')">850 hPa (~1.5 km)</button>
-        <button class="tab-btn" onclick="filterLevel('925h')">925 hPa (~750 m)</button>
-        <button class="tab-btn" onclick="filterLevel('500h')">500 hPa (~5.5 km)</button>
-        <button class="tab-btn" onclick="filterLevel('200h')">200 hPa (~12 km)</button>
+        <div class="divider"></div>
+
+        <!-- ปุ่มเปิด-ปิด 7 เลเยอร์ -->
+        <div class="control-group">
+            <label>เลเยอร์:</label>
+            <div id="layerBtnGroup" style="display: flex; gap: 3px;"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- แถบสไลเดอร์ปรับความทึบ -->
+        <div class="control-group">
+            <label for="opacitySlider">ทึบ:</label>
+            <input type="range" id="opacitySlider" min="0" max="100" value="100" class="slider" oninput="updateOpacity(this.value)">
+            <span id="opacityVal" style="font-size: 11px; color: var(--accent-color); min-width: 25px;">100%</span>
+        </div>
+
+        <!-- แถบสไลเดอร์ปรับความสว่าง -->
+        <div class="control-group">
+            <label for="brightnessSlider">สว่าง:</label>
+            <input type="range" id="brightnessSlider" min="50" max="150" value="100" class="slider" oninput="updateBrightness(this.value)">
+            <span id="brightnessVal" style="font-size: 11px; color: var(--accent-color); min-width: 25px;">100%</span>
+        </div>
+
+        <!-- ปุ่มควบคุมหน้าต่าง (ย่อพัก, ขยายเต็มจอ, ปิด) -->
+        <div class="window-controls">
+            <button class="win-btn" title="ย่อพักเก็บไว้มุมซ้ายล่าง" onclick="minimizeWindow()">🗕</button>
+            <button class="win-btn" title="สลับเต็มจอ" onclick="toggleFullscreen()">🗖</button>
+            <button class="win-btn close-btn" title="ปิดหน้าต่าง" onclick="closeWindow()">✕</button>
+        </div>
     </div>
 
-    <!-- 🗺️ Dashboard Container -->
-    <main id="dashboardContainer">
-        <div id="windy"></div>	
-	</main>
+    <!-- พื้นที่แสดงแผนที่เต็มหน้าจอด้านล่าง -->
+    <div id="map-fullscreen-container"></div>
 
-    <!-- เชื่อมต่อกับไฟล์ JavaScript -->
-	<!-- 1. โหลดไลบรารีหลักของ Windy ก่อน -->
-	<script src="https://api.windy.com/assets/map-forecast/libBoot.js"></script>
-
-	<!-- 2. ค่อยโหลดไฟล์ script.js ของเราทีหลัง -->
-	<script src="script.js"></script>
+    <!-- 🌟 ปุ่มพักหน้าจอแอบอยู่มุมซ้ายล่าง -->
+    <button id="mini-dock-btn" onclick="restoreWindow()">
+        <span>🌀 Windy Dashboard</span>
+        <small style="opacity: 0.8; font-weight: normal;"></small>
+    </button>
 	
+    <!-- โหลดไฟล์ JavaScript ควบคุม -->
+    <script src="script.js"></script>
 </body>
 </html>
